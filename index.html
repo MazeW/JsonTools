@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Tools</title>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+    <link rel="stylesheet" type="text/css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css">
+    </link>
+    <link rel="stylesheet" type="text/css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/material-ocean.min.css">
+    </link>
+    <link rel="stylesheet" type="text/css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/xq-light.min.css">
+    </link>
+    <link rel="stylesheet" type="text/css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/fold/foldgutter.min.css">
+    <script language="javascript" type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
+    <script language="javascript" type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js"></script>
+    <script language="javascript" type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/lint/json-lint.min.js"></script>
+    <script language="javascript" type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/fold/foldcode.min.js"></script>
+    <script language="javascript" type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/fold/foldgutter.min.js"></script>
+    <script language="javascript" type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/fold/brace-fold.min.js"></script>
+    <script language="javascript" type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/fold/comment-fold.min.js"></script>
+    <style>
+        :root {
+            --accent: rgb(216, 37, 37);
+            --accent-hover: rgba(216, 37, 37, 0.616);
+        }
+
+        :root[data-theme="dark"] {
+            --bg: #212121;
+            --accent-bg: #2b2b2b;
+            --text: #dcdcdc;
+            --text-light: #ababab;
+            --accent-text: var(--bg);
+            --code: #f06292;
+            --preformatted: #ccc;
+            --marked: #ffdd33;
+            --disabled: #111;
+        }
+
+        :root[data-theme="light"] {
+            --bg: #fafafa;
+            --accent-bg: #e4e5f1;
+            --text: #212121;
+            --text-light: #585858;
+            --border: #898EA4;
+            --accent-text: var(--bg);
+            --code: #d81b60;
+            --preformatted: #444;
+            --marked: #ffdd33;
+            --disabled: #efefef;
+        }
+
+        #theme-toggle {
+            padding: 10px;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        #theme-toggle {
+            text-shadow: 1px 1px 0px white, -1px -1px 0px white, 1px -1px 0px white, -1px 1px 0px white;
+        }
+
+        #errorMessage {
+            font-size: 14px;
+            color: red;
+            font-weight: bold;
+        }
+
+        .container {
+            grid-column: 1 / -1;
+            width: 100%;
+            padding: 0 50px;
+        }
+
+        .flex {
+            display: flex;
+            gap: 15px;
+        }
+
+        .textarea-container {
+            flex: 1;
+            border: black;
+        }
+
+        .CodeMirror {
+            min-height: 600px;
+            max-width: 902px;
+            border: 1px solid rgba(0, 0, 0, 0.212);
+        }
+
+        @media (max-width: 768px) {
+
+            /* for mobile change layout and min height */
+            .flex {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .CodeMirror {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>JSON Tools</h1>
+
+        <div class="button-group">
+            <button onclick="convertToJsonString()">Escape</button>
+            <button onclick="convertToJson()">Unescape</button>
+            <button onclick="beautifyJson()">Beautify</button>
+            <button onclick="minifyJson()">Minify</button>
+            <button onclick="clearFields()">Clear</button>
+            <a id="theme-toggle" onclick="toggleTheme()">🌞</a>
+        </div>
+
+        <div class="flex">
+            <div class="textarea-container">
+                <label for="inputJson">Input:</label>
+                <textarea id="inputJson" class="input-field" rows="10"
+                    placeholder="Enter JSON or escaped JSON to convert"></textarea>
+            </div>
+            <div class="textarea-container">
+                <label for="outputJson">Result:</label>
+                <textarea id="outputJson" class="input-field" rows="10" readonly></textarea>
+            </div>
+        </div>
+
+        <div id="errorMessage"></div>
+    </div>
+
+    <script>
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                isDarkMode = savedTheme === 'dark';
+                applyTheme(isDarkMode);
+            } else {
+                var preferedMode = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? "dark" : "light";
+                console.log(preferedMode);
+                isDarkMode = preferedMode === 'dark';
+                applyTheme(isDarkMode);
+            }
+        };
+        let isDarkMode = false;
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            applyTheme(isDarkMode);
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        }
+
+        function applyTheme(isDarkMode) {
+            const theme = isDarkMode ? 'material-ocean' : 'xq-light';
+            editorInput.setOption('theme', theme);
+            editorOutput.setOption('theme', theme);
+            if (isDarkMode) {
+                document.getElementById('theme-toggle').innerText = '🌞';
+                document.documentElement.setAttribute('data-theme', 'dark');
+
+            } else {
+                document.getElementById('theme-toggle').innerText = '🌚';
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        }
+
+        var editorInput = CodeMirror.fromTextArea(document.getElementById('inputJson'), {
+            lineNumbers: true,
+            mode: 'application/json',
+            foldGutter: true,
+            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+        });
+        editorInput.setOption('theme', 'xq-light');
+        editorInput.setSize("100%", null);
+
+        var editorOutput = CodeMirror.fromTextArea(document.getElementById('outputJson'), {
+            lineNumbers: true,
+            mode: 'application/json',
+            foldGutter: true,
+            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+        });
+        editorOutput.setOption('theme', 'xq-light');
+        editorOutput.setSize("100%", null);
+
+        function displayError(message) {
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        function clearError() {
+            document.getElementById('errorMessage').textContent = '';
+        }
+
+        function clearFields() {
+            editorInput.setValue('');
+            editorOutput.setValue('');
+        }
+
+        function escapeJsonString(jsonObj) {
+            let jsonString = JSON.stringify(jsonObj);
+
+            jsonString = jsonString.replace(/\\/g, '\\\\'); // Escape backslashes
+            jsonString = jsonString.replace(/\"/g, '\\"'); // Escape quotes
+
+            return jsonString;
+        }
+
+        function convertToJsonString() {
+            const inputJson = editorInput.getValue();
+            try {
+                const parsedJson = JSON.parse(inputJson);
+                const escapedJsonString = escapeJsonString(parsedJson);
+                editorOutput.setValue(`${escapedJsonString}`);
+                clearError();
+            } catch (e) {
+                displayError('Invalid JSON input provided.');
+            }
+        }
+
+        function convertToJson() {
+            const inputJsonString = editorInput.getValue();
+            try {
+                let parsedJson;
+
+                try {
+                    parsedJson = JSON.parse(inputJsonString);
+                    editorOutput.setValue(JSON.stringify(parsedJson, null, 4));
+                    clearError();
+                    return;
+                } catch (e) {
+                    const unescapedJsonString = inputJsonString.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+                    try {
+                        parsedJson = JSON.parse(unescapedJsonString);
+                        editorOutput.setValue(JSON.stringify(parsedJson, null, 4));
+                        clearError();
+                        return;
+                    } catch (e) {
+                        displayError('Invalid JSON input');
+                        return;
+                    }
+                }
+            } catch (e) {
+                displayError('Invalid JSON string input');
+            }
+        }
+
+        function beautifyJson() {
+            const inputJson = editorInput.getValue();
+            try {
+                const parsedJson = JSON.parse(inputJson);
+                editorOutput.setValue(JSON.stringify(parsedJson, null, 4)); // 4 spaces indentation
+                clearError();
+            } catch (e) {
+                displayError('Invalid JSON input');
+            }
+        }
+
+        function minifyJson() {
+            const inputJson = editorInput.getValue();
+            try {
+                const parsedJson = JSON.parse(inputJson);
+                editorOutput.setValue(JSON.stringify(parsedJson));
+                clearError();
+            } catch (e) {
+                displayError('Invalid JSON input');
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
