@@ -66,9 +66,6 @@
             padding: 10px;
             cursor: pointer;
             font-size: 24px;
-        }
-
-        #theme-toggle {
             text-shadow: 1px 1px 0px white, -1px -1px 0px white, 1px -1px 0px white, -1px 1px 0px white;
         }
 
@@ -98,9 +95,14 @@
             min-height: 600px;
             max-width: 902px;
             border: 1px solid rgba(0, 0, 0, 0.212);
+            font-size: 16px;
         }
 
-        @media (max-width: 768px) {
+        #font-size-label {
+            display: inline;
+        }
+
+        @media (max-width: 1000px) {
 
             /* for mobile change layout and min height */
             .flex {
@@ -111,11 +113,26 @@
             .CodeMirror {
                 min-height: 300px;
             }
+
+            #font-size-label {
+                display: block;
+            }
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
         }
     </style>
 </head>
 
 <body>
+    <div class="theme-toggle">
+        <a id="theme-toggle" onclick="toggleTheme()">🌞</a>
+    </div>
     <div class="container">
         <h1>JSON Tools</h1>
 
@@ -125,7 +142,8 @@
             <button onclick="beautifyJson()">Beautify</button>
             <button onclick="minifyJson()">Minify</button>
             <button onclick="clearFields()">Clear</button>
-            <a id="theme-toggle" onclick="toggleTheme()">🌞</a>
+            <label id="font-size-label" for="font-size">Font Size:</label>
+            <input type="number" id="font-size" value="16" min="8" max="72" step="1">
         </div>
 
         <div class="flex">
@@ -194,6 +212,30 @@
         });
         editorOutput.setOption('theme', 'xq-light');
         editorOutput.setSize("100%", null);
+
+        const input = document.getElementById('font-size');
+
+        input.addEventListener('wheel', (event) => {
+            let currentValue = parseInt(input.value, 10);
+            if (event.deltaY > 0) {
+                input.value = Math.min(currentValue + 1, 72); // Increase the size
+            } else {
+                input.value = Math.max(currentValue - 1, 8); // Decrease the size
+            }
+        });
+
+        input.addEventListener('keydown', function (event) {
+            event.preventDefault();
+        });
+
+        const fontResizeTarget = document.querySelectorAll('.CodeMirror-lines');;
+        input.addEventListener('input', () => {
+            let fontSize = parseInt(input.value, 10);
+
+            fontResizeTarget.forEach(element => {
+                element.style.fontSize = fontSize + 'px';
+            });
+        });
 
         function displayError(message) {
             document.getElementById('errorMessage').textContent = message;
