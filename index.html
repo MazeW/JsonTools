@@ -84,18 +84,27 @@
         .flex {
             display: flex;
             gap: 15px;
+            min-width: 0;
         }
 
         .textarea-container {
             flex: 1;
+            min-width: 0;
             border: black;
         }
 
         .CodeMirror {
             min-height: 600px;
-            max-width: 902px;
+            max-width: 100%;
             border: 1px solid rgba(0, 0, 0, 0.212);
             font-size: 16px;
+            overflow: hidden;
+        }
+
+        .CodeMirror-scroll {
+            overflow-x: auto;
+            overflow-y: auto;
+            white-space: pre;
         }
 
         #font-size-label {
@@ -162,7 +171,9 @@
     </div>
 
     <script>
-        window.onload = () => {
+        document.getElementById("font-size").value = 16;
+        
+        window.onload = () => { 
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
                 isDarkMode = savedTheme === 'dark';
@@ -321,6 +332,17 @@
             }
         }
 
+        // sync scrolling between windows
+        const CMScroll = document.querySelectorAll('.CodeMirror-scroll');
+        CMScroll.forEach((cm) => {
+            cm.addEventListener('scroll', () => {
+                const otherCm = Array.from(CMScroll).find((el) => el !== cm);
+                if (otherCm) {
+                    otherCm.scrollTop = cm.scrollTop;
+                    otherCm.scrollLeft = cm.scrollLeft;
+                }
+            });
+        });
     </script>
 
 </body>
